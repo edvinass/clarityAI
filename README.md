@@ -8,7 +8,7 @@ ClarityAI is a menu bar app that reads your current text selection from any app,
 
 1. **Select text** in Mail, Notes, Slack, Chrome, or any editable field.
 2. **Trigger refinement** using one of:
-   - Global hotkey: **⌥ Space** (Option + Space)
+   - Global hotkey: **⌃⌥ Space** (Control + Option + Space) — customizable in Settings
    - Menu bar: **Refine Selection**
    - macOS Services: **Services → Refine with ClarityAI**
 3. ClarityAI replaces the selection with refined text.

@@ -24,6 +24,9 @@ final class AppModel: ObservableObject {
         didSet { UserDefaults.standard.set(useStubRefinement, forKey: Keys.useStubRefinement) }
     }
 
+    @Published var hotkeyConfig: HotkeyConfig
+    @Published var hotkeyRegistrationFailed = false
+
     let refinementCoordinator: RefinementCoordinator
 
     private init() {
@@ -37,6 +40,7 @@ final class AppModel: ObservableObject {
         deepSeekToken = storedToken
         deepSeekModel = storedModel
         useStubRefinement = storedUseStub
+        hotkeyConfig = HotkeyManager.shared.config
 
         refinementCoordinator = RefinementCoordinator(
             refinementService: AppModel.makeRefinementService(
@@ -49,6 +53,11 @@ final class AppModel: ObservableObject {
 
     func requestAccessibilityPermission() {
         _ = AccessibilityTextService.shared.requestPermission(prompt: true)
+    }
+
+    func updateHotkey(_ newConfig: HotkeyConfig) {
+        hotkeyConfig = newConfig
+        hotkeyRegistrationFailed = !HotkeyManager.shared.update(newConfig)
     }
 
     func refineCurrentSelection() async {

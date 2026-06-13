@@ -48,7 +48,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         HotkeyManager.shared.onHotkey = { [weak self] in
             self?.refineSelection()
         }
-        HotkeyManager.shared.register()
+        let registered = HotkeyManager.shared.register()
+        MainActor.assumeIsolated {
+            appModel.hotkeyRegistrationFailed = !registered
+        }
     }
 
     private func registerServices() {

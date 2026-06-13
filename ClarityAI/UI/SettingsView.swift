@@ -40,10 +40,26 @@ struct SettingsView: View {
 
             Section("Shortcuts") {
                 LabeledContent("Global hotkey") {
-                    Text("⌥ Space")
+                    HotkeyRecorderView(
+                        config: Binding(
+                            get: { appModel.hotkeyConfig },
+                            set: { appModel.updateHotkey($0) }
+                        )
+                    )
+                    .frame(width: 220, height: 24)
                 }
 
-                Text("You can also use the Services menu: select text, then choose Services → Refine with ClarityAI.")
+                Button("Reset to ⌃⌥Space") {
+                    appModel.updateHotkey(.default)
+                }
+
+                if appModel.hotkeyRegistrationFailed {
+                    Text("That shortcut couldn't be registered — it may be in use by macOS or another app. Try a different combination.")
+                        .font(.caption)
+                        .foregroundStyle(.red)
+                }
+
+                Text("Click the field, then press a shortcut (must include ⌃, ⌥, ⌘, or ⇧). You can also use the Services menu: select text, then choose Services → Refine with ClarityAI.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }

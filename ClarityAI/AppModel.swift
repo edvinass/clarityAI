@@ -12,8 +12,12 @@ final class AppModel: ObservableObject {
         didSet { UserDefaults.standard.set(previewBeforeReplace, forKey: Keys.previewBeforeReplace) }
     }
 
-    @Published var apiKey: String {
-        didSet { UserDefaults.standard.set(apiKey, forKey: Keys.apiKey) }
+    @Published var deepSeekToken: String {
+        didSet { UserDefaults.standard.set(deepSeekToken, forKey: Keys.deepSeekToken) }
+    }
+
+    @Published var deepSeekModel: String {
+        didSet { UserDefaults.standard.set(deepSeekModel, forKey: Keys.deepSeekModel) }
     }
 
     @Published var useStubRefinement: Bool {
@@ -25,17 +29,20 @@ final class AppModel: ObservableObject {
     private init() {
         let defaults = UserDefaults.standard
         let storedPreview = defaults.object(forKey: Keys.previewBeforeReplace) as? Bool ?? false
-        let storedAPIKey = defaults.string(forKey: Keys.apiKey) ?? ""
+        let storedToken = defaults.string(forKey: Keys.deepSeekToken) ?? ""
+        let storedModel = defaults.string(forKey: Keys.deepSeekModel) ?? "deepseek-chat"
         let storedUseStub = defaults.object(forKey: Keys.useStubRefinement) as? Bool ?? true
 
         previewBeforeReplace = storedPreview
-        apiKey = storedAPIKey
+        deepSeekToken = storedToken
+        deepSeekModel = storedModel
         useStubRefinement = storedUseStub
 
         refinementCoordinator = RefinementCoordinator(
             refinementService: AppModel.makeRefinementService(
                 useStub: storedUseStub,
-                apiKey: storedAPIKey
+                token: storedToken,
+                model: storedModel
             )
         )
     }
@@ -52,7 +59,11 @@ final class AppModel: ObservableObject {
         defer { isRefining = false }
 
         refinementCoordinator.updateRefinementService(
-            AppModel.makeRefinementService(useStub: useStubRefinement, apiKey: apiKey)
+            AppModel.makeRefinementService(
+                useStub: useStubRefinement,
+                token: deepSeekToken,
+                model: deepSeekModel
+            )
         )
 
         do {
@@ -91,16 +102,18 @@ final class AppModel: ObservableObject {
         alert.runModal()
     }
 
-    private static func makeRefinementService(useStub: Bool, apiKey: String) -> TextRefining {
-        if useStub || apiKey.isEmpty {
+    private static func makeRefinementService(useStub: Bool, token: String, model: String) -> TextRefining {
+        if useStub || token.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
             return StubTextRefinementService()
         }
-        return OpenAITextRefinementService(apiKey: apiKey)
+        let resolvedModel = model.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? "deepseek-chat" : model
+        return DeepSeekTextRefinementService(apiToken: token, model: resolvedModel)
     }
 
     private enum Keys {
         static let previewBeforeReplace = "previewBeforeReplace"
-        static let apiKey = "openAIAPIKey"
+        static let deepSeekToken = "deepSeekAPIToken"
+        static let deepSeekModel = "deepSeekModel"
         static let useStubRefinement = "useStubRefinement"
     }
 }

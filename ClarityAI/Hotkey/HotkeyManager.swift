@@ -1,17 +1,75 @@
+import AppKit
 import Carbon
-import Foundation
+
+struct HotkeyConfig: Equatable {
+    var keyCode: UInt32
+    var carbonModifiers: UInt32
+    var label: String
+
+    static let `default` = HotkeyConfig(
+        keyCode: UInt32(kVK_Space),
+        carbonModifiers: UInt32(controlKey | optionKey),
+        label: "Space"
+    )
+
+    var displayString: String {
+        var result = ""
+        if carbonModifiers & UInt32(controlKey) != 0 { result += "⌃" }
+        if carbonModifiers & UInt32(optionKey) != 0 { result += "⌥" }
+        if carbonModifiers & UInt32(shiftKey) != 0 { result += "⇧" }
+        if carbonModifiers & UInt32(cmdKey) != 0 { result += "⌘" }
+        result += label
+        return result
+    }
+
+    var hasModifier: Bool {
+        carbonModifiers & UInt32(controlKey | optionKey | shiftKey | cmdKey) != 0
+    }
+}
 
 final class HotkeyManager {
     static let shared = HotkeyManager()
 
     var onHotkey: (() -> Void)?
 
+    private(set) var config: HotkeyConfig
+
     private var hotKeyRef: EventHotKeyRef?
     private var eventHandlerRef: EventHandlerRef?
 
-    private init() {}
+    private enum Keys {
+        static let keyCode = "hotkeyKeyCode"
+        static let modifiers = "hotkeyModifiers"
+        static let label = "hotkeyLabel"
+    }
 
-    func register() {
+    private init() {
+        let defaults = UserDefaults.standard
+        if defaults.object(forKey: Keys.keyCode) != nil {
+            config = HotkeyConfig(
+                keyCode: UInt32(defaults.integer(forKey: Keys.keyCode)),
+                carbonModifiers: UInt32(defaults.integer(forKey: Keys.modifiers)),
+                label: defaults.string(forKey: Keys.label) ?? HotkeyConfig.default.label
+            )
+        } else {
+            config = .default
+        }
+    }
+
+    @discardableResult
+    func update(_ newConfig: HotkeyConfig) -> Bool {
+        config = newConfig
+
+        let defaults = UserDefaults.standard
+        defaults.set(Int(newConfig.keyCode), forKey: Keys.keyCode)
+        defaults.set(Int(newConfig.carbonModifiers), forKey: Keys.modifiers)
+        defaults.set(newConfig.label, forKey: Keys.label)
+
+        return register()
+    }
+
+    @discardableResult
+    func register() -> Bool {
         unregister()
 
         var eventType = EventTypeSpec(
@@ -19,7 +77,7 @@ final class HotkeyManager {
             eventKind: UInt32(kEventHotKeyPressed)
         )
 
-        let status = InstallEventHandler(
+        let installStatus = InstallEventHandler(
             GetApplicationEventTarget(),
             hotkeyCallback,
             1,
@@ -28,13 +86,13 @@ final class HotkeyManager {
             &eventHandlerRef
         )
 
-        guard status == noErr else { return }
+        guard installStatus == noErr else { return false }
 
-        let hotKeyID = EventHotKeyID(signature: OSType(1), id: 1)
+        let hotKeyID = EventHotKeyID(signature: OSType(0x434C5259), id: 1) // 'CLRY'
 
         let registerStatus = RegisterEventHotKey(
-            UInt32(kVK_Space),
-            UInt32(optionKey),
+            config.keyCode,
+            config.carbonModifiers,
             hotKeyID,
             GetApplicationEventTarget(),
             0,
@@ -43,7 +101,10 @@ final class HotkeyManager {
 
         if registerStatus != noErr {
             unregister()
+            return false
         }
+
+        return true
     }
 
     func unregister() {

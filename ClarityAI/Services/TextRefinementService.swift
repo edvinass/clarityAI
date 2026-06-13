@@ -43,12 +43,21 @@ struct StubTextRefinementService: TextRefining {
     }
 }
 
-struct OpenAITextRefinementService: TextRefining {
-    private let apiKey: String
+struct DeepSeekTextRefinementService: TextRefining {
+    private let apiToken: String
+    private let model: String
+    private let endpoint: URL
     private let session: URLSession
 
-    init(apiKey: String, session: URLSession = .shared) {
-        self.apiKey = apiKey
+    init(
+        apiToken: String,
+        model: String = "deepseek-chat",
+        endpoint: URL = URL(string: "https://api.deepseek.com/chat/completions")!,
+        session: URLSession = .shared
+    ) {
+        self.apiToken = apiToken
+        self.model = model
+        self.endpoint = endpoint
         self.session = session
     }
 
@@ -57,14 +66,19 @@ struct OpenAITextRefinementService: TextRefining {
             throw TextRefinementError.emptyInput
         }
 
-        var request = URLRequest(url: URL(string: "https://api.openai.com/v1/chat/completions")!)
+        guard !apiToken.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+            throw TextRefinementError.apiError("Add your DeepSeek API token in Settings.")
+        }
+
+        var request = URLRequest(url: endpoint)
         request.httpMethod = "POST"
-        request.setValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
+        request.setValue("Bearer \(apiToken)", forHTTPHeaderField: "Authorization")
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
 
         let body: [String: Any] = [
-            "model": "gpt-4o-mini",
+            "model": model,
             "temperature": 0.3,
+            "stream": false,
             "messages": [
                 [
                     "role": "system",

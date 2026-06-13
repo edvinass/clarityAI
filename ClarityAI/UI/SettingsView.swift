@@ -11,11 +11,17 @@ struct SettingsView: View {
                 Toggle("Use built-in stub (no API key)", isOn: $appModel.useStubRefinement)
             }
 
-            Section("OpenAI") {
-                SecureField("API Key", text: $appModel.apiKey)
+            Section("DeepSeek") {
+                SecureField("API Token", text: $appModel.deepSeekToken)
                     .disabled(appModel.useStubRefinement)
 
-                Text("When a key is set and stub mode is off, ClarityAI uses gpt-4o-mini to refine text.")
+                Picker("Model", selection: $appModel.deepSeekModel) {
+                    Text("deepseek-chat").tag("deepseek-chat")
+                    Text("deepseek-reasoner").tag("deepseek-reasoner")
+                }
+                .disabled(appModel.useStubRefinement)
+
+                Text("When a token is set and stub mode is off, ClarityAI calls the DeepSeek API to refine text. Get a token at platform.deepseek.com.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }

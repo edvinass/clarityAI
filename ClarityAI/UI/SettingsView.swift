@@ -31,6 +31,26 @@ struct SettingsView: View {
                     .foregroundStyle(.secondary)
             }
 
+            Section("Context") {
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("Custom instructions")
+                        .font(.subheadline)
+
+                    TextEditor(text: $appModel.customContext)
+                        .font(.body)
+                        .frame(minHeight: 90)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 6)
+                                .stroke(Color.secondary.opacity(0.3))
+                        )
+                        .disabled(appModel.useStubRefinement)
+
+                    Text("Optional guidance sent to the model with every refinement — e.g. tone, audience, language, or style. Example: \"Keep it formal and concise. Use British English.\"")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+            }
+
             Section("Permissions") {
                 Text("ClarityAI needs Accessibility access to read and replace selected text in other apps.")
                     .font(.caption)
@@ -77,7 +97,6 @@ struct SettingsView: View {
             }
         }
         .formStyle(.grouped)
-        .frame(width: 480, height: 420)
-        .padding()
+        .frame(width: 480, height: 600)
     }
 }

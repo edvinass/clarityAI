@@ -46,19 +46,29 @@ struct StubTextRefinementService: TextRefining {
 struct DeepSeekTextRefinementService: TextRefining {
     private let apiToken: String
     private let model: String
+    private let context: String
     private let endpoint: URL
     private let session: URLSession
 
     init(
         apiToken: String,
         model: String = "deepseek-chat",
+        context: String = "",
         endpoint: URL = URL(string: "https://api.deepseek.com/chat/completions")!,
         session: URLSession = .shared
     ) {
         self.apiToken = apiToken
         self.model = model
+        self.context = context
         self.endpoint = endpoint
         self.session = session
+    }
+
+    private var systemPrompt: String {
+        let base = "You improve writing. Return only the refined text with no commentary."
+        let trimmedContext = context.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmedContext.isEmpty else { return base }
+        return base + "\n\nAdditional context and instructions from the user:\n" + trimmedContext
     }
 
     func refine(_ text: String) async throws -> String {
@@ -82,7 +92,7 @@ struct DeepSeekTextRefinementService: TextRefining {
             "messages": [
                 [
                     "role": "system",
-                    "content": "You improve writing. Return only the refined text with no commentary."
+                    "content": systemPrompt
                 ],
                 [
                     "role": "user",

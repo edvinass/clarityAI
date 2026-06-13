@@ -27,6 +27,10 @@ final class AppModel: ObservableObject {
         didSet { UserDefaults.standard.set(deepSeekModel, forKey: Keys.deepSeekModel) }
     }
 
+    @Published var customContext: String {
+        didSet { UserDefaults.standard.set(customContext, forKey: Keys.customContext) }
+    }
+
     @Published var useStubRefinement: Bool {
         didSet { UserDefaults.standard.set(useStubRefinement, forKey: Keys.useStubRefinement) }
     }
@@ -42,12 +46,14 @@ final class AppModel: ObservableObject {
         let storedWholeField = defaults.object(forKey: Keys.refineWholeField) as? Bool ?? true
         let storedToken = defaults.string(forKey: Keys.deepSeekToken) ?? ""
         let storedModel = defaults.string(forKey: Keys.deepSeekModel) ?? "deepseek-chat"
+        let storedContext = defaults.string(forKey: Keys.customContext) ?? ""
         let storedUseStub = defaults.object(forKey: Keys.useStubRefinement) as? Bool ?? true
 
         previewBeforeReplace = storedPreview
         refineEntireFieldWhenNoSelection = storedWholeField
         deepSeekToken = storedToken
         deepSeekModel = storedModel
+        customContext = storedContext
         useStubRefinement = storedUseStub
         hotkeyConfig = HotkeyManager.shared.config
 
@@ -55,7 +61,8 @@ final class AppModel: ObservableObject {
             refinementService: AppModel.makeRefinementService(
                 useStub: storedUseStub,
                 token: storedToken,
-                model: storedModel
+                model: storedModel,
+                context: storedContext
             )
         )
         refinementCoordinator.refineEntireFieldWhenNoSelection = storedWholeField
@@ -81,7 +88,8 @@ final class AppModel: ObservableObject {
             AppModel.makeRefinementService(
                 useStub: useStubRefinement,
                 token: deepSeekToken,
-                model: deepSeekModel
+                model: deepSeekModel,
+                context: customContext
             )
         )
 
@@ -121,12 +129,12 @@ final class AppModel: ObservableObject {
         alert.runModal()
     }
 
-    private static func makeRefinementService(useStub: Bool, token: String, model: String) -> TextRefining {
+    private static func makeRefinementService(useStub: Bool, token: String, model: String, context: String) -> TextRefining {
         if useStub || token.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
             return StubTextRefinementService()
         }
         let resolvedModel = model.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? "deepseek-chat" : model
-        return DeepSeekTextRefinementService(apiToken: token, model: resolvedModel)
+        return DeepSeekTextRefinementService(apiToken: token, model: resolvedModel, context: context)
     }
 
     private enum Keys {
@@ -134,6 +142,7 @@ final class AppModel: ObservableObject {
         static let refineWholeField = "refineEntireFieldWhenNoSelection"
         static let deepSeekToken = "deepSeekAPIToken"
         static let deepSeekModel = "deepSeekModel"
+        static let customContext = "customContext"
         static let useStubRefinement = "useStubRefinement"
     }
 }

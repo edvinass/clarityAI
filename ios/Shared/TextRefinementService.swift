@@ -1,0 +1,141 @@
+import Foundation
+
+protocol TextRefining {
+    func refine(_ text: String) async throws -> String
+}
+
+enum TextRefinementError: LocalizedError {
+    case emptyInput
+    case invalidResponse
+    case noNetworkAccess
+    case apiError(String)
+
+    var errorDescription: String? {
+        switch self {
+        case .emptyInput:
+            return "Type something to refine."
+        case .invalidResponse:
+            return "The refinement service returned an unexpected response."
+        case .noNetworkAccess:
+            return "Enable \"Allow Full Access\" for the ClarityAI keyboard in Settings to use the AI engine."
+        case .apiError(let message):
+            return message
+        }
+    }
+}
+
+/// Offline fallback that capitalizes sentences. Works without network access,
+/// so it is safe to use even when the keyboard does not have Full Access.
+struct StubTextRefinementService: TextRefining {
+    func refine(_ text: String) async throws -> String {
+        guard !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+            throw TextRefinementError.emptyInput
+        }
+
+        try await Task.sleep(nanoseconds: 200_000_000)
+
+        let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        let sentences = trimmed
+            .components(separatedBy: CharacterSet(charactersIn: ".!?"))
+            .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+            .filter { !$0.isEmpty }
+            .map { sentence -> String in
+                guard let first = sentence.first else { return sentence }
+                return first.uppercased() + sentence.dropFirst()
+            }
+
+        let suffix = (trimmed.hasSuffix(".") || trimmed.hasSuffix("!") || trimmed.hasSuffix("?")) ? "." : ""
+        return sentences.joined(separator: ". ") + suffix
+    }
+}
+
+/// Calls the DeepSeek chat-completions API. Requires the keyboard extension to
+/// have "Allow Full Access" enabled, otherwise the network request fails.
+struct DeepSeekTextRefinementService: TextRefining {
+    private let apiToken: String
+    private let model: String
+    private let context: String
+    private let endpoint: URL
+    private let session: URLSession
+
+    init(
+        apiToken: String,
+        model: String = "deepseek-chat",
+        context: String = "",
+        endpoint: URL = URL(string: "https://api.deepseek.com/chat/completions")!,
+        session: URLSession = .shared
+    ) {
+        self.apiToken = apiToken
+        self.model = model
+        self.context = context
+        self.endpoint = endpoint
+        self.session = session
+    }
+
+    private var systemPrompt: String {
+        let base = "You improve writing. Return only the refined text with no commentary."
+        let trimmedContext = context.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmedContext.isEmpty else { return base }
+        return base + "\n\nAdditional context and instructions from the user:\n" + trimmedContext
+    }
+
+    func refine(_ text: String) async throws -> String {
+        guard !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+            throw TextRefinementError.emptyInput
+        }
+
+        guard !apiToken.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+            throw TextRefinementError.apiError("Add your DeepSeek API token in the ClarityAI app.")
+        }
+
+        var request = URLRequest(url: endpoint)
+        request.httpMethod = "POST"
+        request.setValue("Bearer \(apiToken)", forHTTPHeaderField: "Authorization")
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+
+        let body: [String: Any] = [
+            "model": model,
+            "temperature": 0.3,
+            "stream": false,
+            "messages": [
+                ["role": "system", "content": systemPrompt],
+                ["role": "user", "content": text]
+            ]
+        ]
+
+        request.httpBody = try JSONSerialization.data(withJSONObject: body)
+
+        let data: Data
+        let response: URLResponse
+        do {
+            (data, response) = try await session.data(for: request)
+        } catch let error as URLError where error.code == .notConnectedToInternet
+            || error.code == .networkConnectionLost
+            || error.code == .cannotConnectToHost {
+            // Without Full Access the extension is denied the network entirely.
+            throw TextRefinementError.noNetworkAccess
+        }
+
+        if let httpResponse = response as? HTTPURLResponse, !(200...299).contains(httpResponse.statusCode) {
+            let message = String(data: data, encoding: .utf8) ?? "HTTP \(httpResponse.statusCode)"
+            throw TextRefinementError.apiError(message)
+        }
+
+        guard
+            let json = try JSONSerialization.jsonObject(with: data) as? [String: Any],
+            let choices = json["choices"] as? [[String: Any]],
+            let first = choices.first,
+            let message = first["message"] as? [String: Any],
+            let content = message["content"] as? String
+        else {
+            throw TextRefinementError.invalidResponse
+        }
+
+        let refined = content.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !refined.isEmpty else {
+            throw TextRefinementError.invalidResponse
+        }
+
+        return refined
+    }
+}

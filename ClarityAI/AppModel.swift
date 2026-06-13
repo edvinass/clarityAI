@@ -12,6 +12,13 @@ final class AppModel: ObservableObject {
         didSet { UserDefaults.standard.set(previewBeforeReplace, forKey: Keys.previewBeforeReplace) }
     }
 
+    @Published var refineEntireFieldWhenNoSelection: Bool {
+        didSet {
+            UserDefaults.standard.set(refineEntireFieldWhenNoSelection, forKey: Keys.refineWholeField)
+            refinementCoordinator.refineEntireFieldWhenNoSelection = refineEntireFieldWhenNoSelection
+        }
+    }
+
     @Published var deepSeekToken: String {
         didSet { UserDefaults.standard.set(deepSeekToken, forKey: Keys.deepSeekToken) }
     }
@@ -32,11 +39,13 @@ final class AppModel: ObservableObject {
     private init() {
         let defaults = UserDefaults.standard
         let storedPreview = defaults.object(forKey: Keys.previewBeforeReplace) as? Bool ?? false
+        let storedWholeField = defaults.object(forKey: Keys.refineWholeField) as? Bool ?? true
         let storedToken = defaults.string(forKey: Keys.deepSeekToken) ?? ""
         let storedModel = defaults.string(forKey: Keys.deepSeekModel) ?? "deepseek-chat"
         let storedUseStub = defaults.object(forKey: Keys.useStubRefinement) as? Bool ?? true
 
         previewBeforeReplace = storedPreview
+        refineEntireFieldWhenNoSelection = storedWholeField
         deepSeekToken = storedToken
         deepSeekModel = storedModel
         useStubRefinement = storedUseStub
@@ -49,6 +58,7 @@ final class AppModel: ObservableObject {
                 model: storedModel
             )
         )
+        refinementCoordinator.refineEntireFieldWhenNoSelection = storedWholeField
     }
 
     func requestAccessibilityPermission() {
@@ -121,6 +131,7 @@ final class AppModel: ObservableObject {
 
     private enum Keys {
         static let previewBeforeReplace = "previewBeforeReplace"
+        static let refineWholeField = "refineEntireFieldWhenNoSelection"
         static let deepSeekToken = "deepSeekAPIToken"
         static let deepSeekModel = "deepSeekModel"
         static let useStubRefinement = "useStubRefinement"

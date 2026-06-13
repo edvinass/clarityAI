@@ -5,7 +5,13 @@ struct RefinementResult {
     let originalText: String
     let refinedText: String
     let focusedElement: AXUIElement?
+    let scope: Scope
     let writeStrategy: WriteStrategy
+
+    enum Scope {
+        case selection
+        case entireField
+    }
 
     enum WriteStrategy {
         case accessibility
@@ -22,7 +28,7 @@ enum RefinementCoordinatorError: LocalizedError {
         case .accessibilityPermissionRequired:
             return "Grant Accessibility access to ClarityAI in System Settings, then try again."
         case .noTextFound:
-            return "No selected text was found. Highlight text in any app and try again."
+            return "No text was found. Click into a text field (or select some text) and try again."
         }
     }
 }
@@ -32,6 +38,9 @@ final class RefinementCoordinator {
     private let accessibilityService = AccessibilityTextService.shared
     private let pasteService = SyntheticPasteService.shared
     private var refinementService: TextRefining
+
+    /// When true, refine the entire focused field if nothing is selected.
+    var refineEntireFieldWhenNoSelection = true
 
     init(refinementService: TextRefining) {
         self.refinementService = refinementService
@@ -51,65 +60,78 @@ final class RefinementCoordinator {
         }
 
         let focusedElement = accessibilityService.focusedElement()
-        let originalText = readSelectedText(focusedElement: focusedElement)
+        let (originalText, scope) = readText(focusedElement: focusedElement)
 
         guard let originalText else {
             throw RefinementCoordinatorError.noTextFound
         }
 
         let refinedText = try await refinementService.refine(originalText)
-        let writeStrategy = preferredWriteStrategy(focusedElement: focusedElement)
+        let writeStrategy = preferredWriteStrategy(focusedElement: focusedElement, scope: scope)
 
         return RefinementResult(
             originalText: originalText,
             refinedText: refinedText,
             focusedElement: focusedElement,
+            scope: scope,
             writeStrategy: writeStrategy
         )
     }
 
     func applyRefinement(_ result: RefinementResult) async throws {
-        switch result.writeStrategy {
-        case .accessibility:
-            let replaced = accessibilityService.setSelectedText(
-                result.refinedText,
-                on: result.focusedElement
-            )
-
-            if !replaced {
+        switch (result.scope, result.writeStrategy) {
+        case (.selection, .accessibility):
+            if !accessibilityService.setSelectedText(result.refinedText, on: result.focusedElement) {
                 _ = pasteService.replaceSelection(with: result.refinedText)
             }
 
-        case .syntheticPaste:
+        case (.selection, .syntheticPaste):
             _ = pasteService.replaceSelection(with: result.refinedText)
+
+        case (.entireField, .accessibility):
+            if !accessibilityService.setFullText(result.refinedText, on: result.focusedElement) {
+                _ = pasteService.replaceEntireField(with: result.refinedText)
+            }
+
+        case (.entireField, .syntheticPaste):
+            _ = pasteService.replaceEntireField(with: result.refinedText)
         }
     }
 
-    private func readSelectedText(focusedElement: AXUIElement?) -> String? {
+    private func readText(focusedElement: AXUIElement?) -> (text: String?, scope: RefinementResult.Scope) {
+        // Prefer an explicit selection if one exists.
         if let selected = accessibilityService.selectedText(from: focusedElement) {
-            return selected
+            return (selected, .selection)
         }
 
+        // No selection: optionally refine the entire field instead of requiring a highlight.
+        if refineEntireFieldWhenNoSelection {
+            if let full = accessibilityService.fullText(from: focusedElement) {
+                return (full, .entireField)
+            }
+
+            if let captured = pasteService.captureEntireField() {
+                return (captured, .entireField)
+            }
+        }
+
+        // Last resort: synthetic copy of whatever selection might exist.
         if let pasted = pasteService.captureSelection() {
-            return pasted
+            return (pasted, .selection)
         }
 
-        return accessibilityService.fullText(from: focusedElement)
+        return (nil, .selection)
     }
 
-    private func preferredWriteStrategy(focusedElement: AXUIElement?) -> RefinementResult.WriteStrategy {
-        guard let focusedElement else {
-            return .syntheticPaste
-        }
+    private func preferredWriteStrategy(
+        focusedElement: AXUIElement?,
+        scope: RefinementResult.Scope
+    ) -> RefinementResult.WriteStrategy {
+        let attribute = scope == .entireField
+            ? (kAXValueAttribute as String)
+            : (kAXSelectedTextAttribute as String)
 
-        var isSettable = DarwinBoolean(false)
-        let result = AXUIElementIsAttributeSettable(
-            focusedElement,
-            kAXSelectedTextAttribute as CFString,
-            &isSettable
-        )
-
-        if result == .success, isSettable.boolValue {
+        if accessibilityService.isAttributeSettable(attribute, on: focusedElement) {
             return .accessibility
         }
 

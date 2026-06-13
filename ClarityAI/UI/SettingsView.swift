@@ -9,6 +9,11 @@ struct SettingsView: View {
             Section("Refinement") {
                 Toggle("Preview before replacing", isOn: $appModel.previewBeforeReplace)
                 Toggle("Use built-in stub (no API key)", isOn: $appModel.useStubRefinement)
+                Toggle("Refine whole field when nothing is selected", isOn: $appModel.refineEntireFieldWhenNoSelection)
+
+                Text("With this on, just click into a text field and trigger ClarityAI — no need to select text first. Select text to refine only that part.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
             }
 
             Section("DeepSeek") {

@@ -74,4 +74,25 @@ final class AccessibilityTextService {
 
         return result == .success
     }
+
+    @discardableResult
+    func setFullText(_ text: String, on element: AXUIElement? = nil) -> Bool {
+        guard let element = element ?? focusedElement() else { return false }
+
+        let result = AXUIElementSetAttributeValue(
+            element,
+            kAXValueAttribute as CFString,
+            text as CFTypeRef
+        )
+
+        return result == .success
+    }
+
+    func isAttributeSettable(_ attribute: String, on element: AXUIElement?) -> Bool {
+        guard let element else { return false }
+
+        var isSettable = DarwinBoolean(false)
+        let result = AXUIElementIsAttributeSettable(element, attribute as CFString, &isSettable)
+        return result == .success && isSettable.boolValue
+    }
 }

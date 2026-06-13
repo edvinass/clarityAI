@@ -6,7 +6,7 @@ ClarityAI is a menu bar app that reads your current text selection from any app,
 
 ## How it works
 
-1. **Select text** in Mail, Notes, Slack, Chrome, or any editable field.
+1. **Click into a text field** (or optionally **select text**) in Mail, Notes, Slack, Chrome, or any editable field. With "Refine whole field when nothing is selected" enabled (default), you don't need to select anything — the entire field is refined. Select text to refine only that portion.
 2. **Trigger refinement** using one of:
    - Global hotkey: **⌃⌥ Space** (Control + Option + Space) — customizable in Settings
    - Menu bar: **Refine Selection**

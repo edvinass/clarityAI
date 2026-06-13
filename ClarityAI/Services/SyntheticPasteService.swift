@@ -42,6 +42,22 @@ final class SyntheticPasteService {
         return true
     }
 
+    func captureEntireField() -> String? {
+        selectAll()
+        Thread.sleep(forTimeInterval: pasteDelay)
+        return captureSelection()
+    }
+
+    func replaceEntireField(with text: String) -> Bool {
+        selectAll()
+        Thread.sleep(forTimeInterval: pasteDelay)
+        return replaceSelection(with: text)
+    }
+
+    func selectAll() {
+        postCommandKey(keyCode: .a)
+    }
+
     private func savePasteboard(_ pasteboard: NSPasteboard) -> [NSPasteboard.PasteboardType: Data]? {
         var saved: [NSPasteboard.PasteboardType: Data] = [:]
 
@@ -80,6 +96,7 @@ final class SyntheticPasteService {
     }
 
     private enum KeyCode: CGKeyCode {
+        case a = 0
         case c = 8
         case v = 9
     }

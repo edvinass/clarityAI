@@ -11,6 +11,9 @@ struct ClarityToolbar: View {
 
     @State private var phase: Phase = .idle
 
+    /// The text that was replaced by the last rewrite, kept so it can be undone.
+    @State private var undoSnapshot: Snapshot?
+
     private let store = KeyboardSettingsStore.shared
 
     private enum Phase: Equatable {
@@ -19,10 +22,19 @@ struct ClarityToolbar: View {
         case message(String)
     }
 
+    /// Captures what a rewrite changed so it can be reverted.
+    private struct Snapshot {
+        let original: String
+        let inserted: String
+    }
+
     var body: some View {
         HStack(spacing: 8) {
             statusView
             Spacer(minLength: 0)
+            if undoSnapshot != nil && phase != .working {
+                undoButton
+            }
             rewriteButton
         }
         .padding(.horizontal, 12)
@@ -71,6 +83,21 @@ struct ClarityToolbar: View {
         .opacity(phase == .working ? 0.5 : 1)
     }
 
+    private var undoButton: some View {
+        Button(action: undo) {
+            HStack(spacing: 6) {
+                Image(systemName: "arrow.uturn.backward")
+                Text("Undo").fontWeight(.medium)
+            }
+            .font(.subheadline)
+            .padding(.horizontal, 14)
+            .padding(.vertical, 8)
+            .foregroundStyle(Color.accentColor)
+            .background(Color.accentColor.opacity(0.15), in: Capsule())
+        }
+        .buttonStyle(.plain)
+    }
+
     private func rewrite() {
         guard let proxy = controller?.textDocumentProxy else { return }
 
@@ -91,6 +118,7 @@ struct ClarityToolbar: View {
                 let result = try await service.refine(original)
                 await MainActor.run {
                     replace(before: before, after: after, with: result, in: proxy)
+                    undoSnapshot = Snapshot(original: original, inserted: result)
                     flash("Done")
                 }
             } catch {
@@ -98,6 +126,17 @@ struct ClarityToolbar: View {
                 await MainActor.run { flash(message) }
             }
         }
+    }
+
+    /// Restores the text that the last rewrite replaced.
+    private func undo() {
+        guard let proxy = controller?.textDocumentProxy, let snapshot = undoSnapshot else { return }
+
+        // Replace the inserted text with the original. Assumes the rewrite is the
+        // most recent edit; the cursor sits at the end of the inserted text.
+        replace(before: snapshot.inserted, after: "", with: snapshot.original, in: proxy)
+        undoSnapshot = nil
+        flash("Reverted")
     }
 
     /// Shows a transient status message, then returns to idle.

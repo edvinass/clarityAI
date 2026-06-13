@@ -94,12 +94,11 @@ system dictation mic) and shows a **Rewrite** bar above the keys.
 
 ## Notes / next steps
 
-- App Group sync is **disabled by default** so the extension can launch without
-  registering `group.com.clarityai.keyboard` in the Apple Developer portal. The
-  app and keyboard each use their own defaults until you add the App Group
-  capability to both targets and re-enable `appGroupId` in `KeyboardApp+ClarityAI.swift`.
-- The API token is stored in `UserDefaults`. For production, move it to the
-  Keychain with a shared access group.
+- Settings sync uses App Group `group.com.clarityai.keyboard`. Both targets must
+  have **Signing & Capabilities → App Groups** enabled with your development
+  team (Xcode registers the group in the developer portal).
+- The API token is stored in App Group `UserDefaults`. For production, move it
+  to the Keychain with a shared access group.
 - KeyboardKit's autocomplete / AI next-word prediction features require
   **KeyboardKit Pro** (a `licenseKey` on the `KeyboardApp`). The current setup
   uses the free tier with a custom toolbar.

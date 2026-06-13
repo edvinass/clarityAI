@@ -26,8 +26,14 @@ targets:
         CURRENT_PROJECT_VERSION: "1"
         GENERATE_INFOPLIST_FILE: NO
         TARGETED_DEVICE_FAMILY: "1,2"
+    capabilities:
+      appGroups:
+        - group.com.clarityai.keyboard
     dependencies:
       - target: ClarityAIBoard
+      # Embed KeyboardKit into the app bundle's Frameworks folder. The extension
+      # links it via @rpath, which resolves to the containing app's Frameworks.
+      - package: KeyboardKit
 
   ClarityAIBoard:
     type: app-extension
@@ -45,5 +51,10 @@ targets:
         GENERATE_INFOPLIST_FILE: NO
         TARGETED_DEVICE_FAMILY: "1,2"
         APPLICATION_EXTENSION_API_ONLY: YES
+    capabilities:
+      appGroups:
+        - group.com.clarityai.keyboard
     dependencies:
+      # Link only; the framework is embedded by the app target above.
       - package: KeyboardKit
+        embed: false

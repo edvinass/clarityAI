@@ -28,13 +28,38 @@ ClarityAI uses two macOS APIs, in order:
 
 ## Setup
 
-1. Open `ClarityAI.xcodeproj` in Xcode.
-2. Build and run (**⌘R**).
-3. When prompted, grant **Accessibility** access in **System Settings → Privacy & Security → Accessibility**.
-4. Open **Settings** from the menu bar:
+1. Open `ClarityAI.xcodeproj` in Xcode, or build from the terminal:
+
+   ```bash
+   ./run.sh
+   ```
+
+2. When prompted, grant **Accessibility** access in **System Settings → Privacy & Security → Accessibility**.
+3. Open **Settings** from the menu bar:
    - Leave **Use built-in stub** on for offline testing (capitalizes sentences).
    - Or turn stub off and enter an **OpenAI API key** for real AI refinement (`gpt-4o-mini`).
    - Enable **Preview before replacing** to review changes before they are applied.
+
+### Build and launch
+
+```bash
+./run.sh           # build (Debug) and launch
+./run.sh release   # build (Release) and launch
+./run.sh build     # build only
+```
+
+### Accessibility permission after rebuilds
+
+macOS remembers Accessibility grants, but ad-hoc builds from `./run.sh` can change identity between rebuilds. You usually grant access **once**, not on every launch.
+
+If refinement stops working after a rebuild, reset the stale grant and re-allow the app:
+
+```bash
+./reset-accessibility.sh
+./run.sh
+```
+
+This clears the old TCC entry for `com.clarityai.app`, opens Accessibility settings, and tells you how to re-add the current build.
 
 ## Project structure
 

@@ -63,7 +63,24 @@ re-run `xcodegen generate` when changing targets/settings.
      blocks all network access from the keyboard and ClarityAI falls back to a
      clear error; the offline stub still works.
 4. In any text field, tap the 🌐 globe key to switch to the ClarityAI keyboard,
-   then tap **Refine**.
+   then tap **Rewrite**.
+
+### If you see the stock iOS keyboard (mic icon, no Rewrite bar)
+
+iOS falls back to the system keyboard when the extension **crashes on launch**.
+Common causes:
+
+1. **Signing** — in Xcode, set your **Development Team** on **both** targets
+   (`ClarityAIKeyboard` and `ClarityAIBoard`), then delete the app from the
+   device and Run again.
+2. **Stale extension** — delete the app, restart the phone, reinstall, and
+   re-add the keyboard in Settings.
+3. **Crash logs** — Xcode → Window → Devices and Simulators → your iPhone →
+   Open Console, then switch to the ClarityAI keyboard and look for
+   `ClarityAIBoard` errors.
+
+When the extension loads correctly, the keyboard looks like KeyboardKit (no
+system dictation mic) and shows a **Rewrite** bar above the keys.
 
 ## Important constraints (iOS keyboard extensions)
 
@@ -77,8 +94,12 @@ re-run `xcodegen generate` when changing targets/settings.
 
 ## Notes / next steps
 
-- The API token is stored in App Group `UserDefaults` for simplicity. For
-  production, move it to the Keychain with a shared access group.
+- App Group sync is **disabled by default** so the extension can launch without
+  registering `group.com.clarityai.keyboard` in the Apple Developer portal. The
+  app and keyboard each use their own defaults until you add the App Group
+  capability to both targets and re-enable `appGroupId` in `KeyboardApp+ClarityAI.swift`.
+- The API token is stored in `UserDefaults`. For production, move it to the
+  Keychain with a shared access group.
 - KeyboardKit's autocomplete / AI next-word prediction features require
   **KeyboardKit Pro** (a `licenseKey` on the `KeyboardApp`). The current setup
   uses the free tier with a custom toolbar.

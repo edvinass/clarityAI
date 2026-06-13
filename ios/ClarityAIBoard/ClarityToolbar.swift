@@ -25,9 +25,10 @@ struct ClarityToolbar: View {
             Spacer(minLength: 0)
             rewriteButton
         }
-        .padding(.horizontal, 8)
+        .padding(.horizontal, 12)
         .frame(maxWidth: .infinity)
-        .frame(height: 48)
+        .frame(height: 52)
+        .background(Color.accentColor.opacity(0.12))
     }
 
     @ViewBuilder

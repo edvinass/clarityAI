@@ -1,25 +1,21 @@
 import KeyboardKit
 import SwiftUI
 
+/// Entry point for the ClarityAI keyboard extension.
+@objc(KeyboardViewController)
 class KeyboardViewController: KeyboardInputViewController {
 
-    override func viewDidLoad() {
-        super.viewDidLoad()
-        // Sets up App Group data sync, services and observable state.
+    override func viewWillSetupKeyboardKit() {
+        super.viewWillSetupKeyboardKit()
         setupKeyboardKit(for: .clarityAI) { _ in }
     }
 
     override func viewWillSetupKeyboardView() {
         setupKeyboardView { [weak self] controller in
-            KeyboardView(
-                services: controller.services,
-                buttonContent: { $0.view },
-                buttonView: { $0.view },
-                collapsedView: { $0.view },
-                emojiKeyboard: { $0.view },
-                // Replace the default autocomplete toolbar with our Refine bar.
-                toolbar: { _ in ClarityToolbar(controller: self) }
-            )
+            VStack(spacing: 0) {
+                ClarityToolbar(controller: self)
+                KeyboardView(services: controller.services)
+            }
         }
     }
 }

@@ -1,10 +1,7 @@
 import Foundation
 
-/// Reads and writes ClarityAI settings to the shared App Group so the keyboard
-/// extension can use values entered in the container app.
-///
-/// Note: the API token is stored in App Group `UserDefaults` for simplicity.
-/// For production, move it to the Keychain with a shared access group.
+/// Reads and writes ClarityAI settings so the keyboard extension can use values
+/// entered in the container app (when App Group is provisioned).
 final class KeyboardSettingsStore {
     static let shared = KeyboardSettingsStore()
 
@@ -17,8 +14,8 @@ final class KeyboardSettingsStore {
         static let useStub = "clarity.useStub"
     }
 
-    init(suiteName: String = AppGroup.identifier) {
-        defaults = UserDefaults(suiteName: suiteName) ?? .standard
+    init(defaults: UserDefaults = AppGroup.defaults) {
+        self.defaults = defaults
     }
 
     var apiToken: String {
@@ -42,7 +39,6 @@ final class KeyboardSettingsStore {
         set { defaults.set(newValue, forKey: Key.useStub) }
     }
 
-    /// Builds the appropriate refinement service for the current settings.
     func makeService() -> TextRefining {
         let hasToken = !apiToken.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
         if useStub || !hasToken {

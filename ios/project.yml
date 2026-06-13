@@ -44,5 +44,6 @@ targets:
         CURRENT_PROJECT_VERSION: "1"
         GENERATE_INFOPLIST_FILE: NO
         TARGETED_DEVICE_FAMILY: "1,2"
+        APPLICATION_EXTENSION_API_ONLY: YES
     dependencies:
       - package: KeyboardKit

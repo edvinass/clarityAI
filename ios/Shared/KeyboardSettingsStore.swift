@@ -24,7 +24,19 @@ final class KeyboardSettingsStore {
     }
 
     var model: String {
-        get { defaults.string(forKey: Key.model) ?? "deepseek-chat" }
+        get {
+            let stored = defaults.string(forKey: Key.model) ?? "deepseek-v4-flash"
+            switch stored {
+            case "deepseek-chat":
+                defaults.set("deepseek-v4-flash", forKey: Key.model)
+                return "deepseek-v4-flash"
+            case "deepseek-reasoner":
+                defaults.set("deepseek-v4-pro", forKey: Key.model)
+                return "deepseek-v4-pro"
+            default:
+                return stored
+            }
+        }
         set { defaults.set(newValue, forKey: Key.model) }
     }
 

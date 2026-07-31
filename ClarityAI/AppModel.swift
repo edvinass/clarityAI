@@ -45,7 +45,8 @@ final class AppModel: ObservableObject {
         let storedPreview = defaults.object(forKey: Keys.previewBeforeReplace) as? Bool ?? false
         let storedWholeField = defaults.object(forKey: Keys.refineWholeField) as? Bool ?? true
         let storedToken = defaults.string(forKey: Keys.deepSeekToken) ?? ""
-        let storedModel = defaults.string(forKey: Keys.deepSeekModel) ?? "deepseek-chat"
+        let storedModel = Self.migrateModelName(defaults.string(forKey: Keys.deepSeekModel) ?? "deepseek-v4-flash")
+        defaults.set(storedModel, forKey: Keys.deepSeekModel)
         let storedContext = defaults.string(forKey: Keys.customContext) ?? ""
         let storedUseStub = defaults.object(forKey: Keys.useStubRefinement) as? Bool ?? true
 
@@ -133,8 +134,19 @@ final class AppModel: ObservableObject {
         if useStub || token.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
             return StubTextRefinementService()
         }
-        let resolvedModel = model.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? "deepseek-chat" : model
+        let resolvedModel = model.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+            ? "deepseek-v4-flash"
+            : migrateModelName(model)
         return DeepSeekTextRefinementService(apiToken: token, model: resolvedModel, context: context)
+    }
+
+    /// Maps retired DeepSeek model IDs to the current v4 names.
+    private static func migrateModelName(_ model: String) -> String {
+        switch model {
+        case "deepseek-chat": return "deepseek-v4-flash"
+        case "deepseek-reasoner": return "deepseek-v4-pro"
+        default: return model
+        }
     }
 
     private enum Keys {

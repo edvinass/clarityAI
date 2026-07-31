@@ -52,7 +52,7 @@ struct DeepSeekTextRefinementService: TextRefining {
 
     init(
         apiToken: String,
-        model: String = "deepseek-chat",
+        model: String = "deepseek-v4-flash",
         context: String = "",
         endpoint: URL = URL(string: "https://api.deepseek.com/chat/completions")!,
         session: URLSession = .shared

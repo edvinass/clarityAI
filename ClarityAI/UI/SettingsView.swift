@@ -21,8 +21,8 @@ struct SettingsView: View {
                     .disabled(appModel.useStubRefinement)
 
                 Picker("Model", selection: $appModel.deepSeekModel) {
-                    Text("deepseek-chat").tag("deepseek-chat")
-                    Text("deepseek-reasoner").tag("deepseek-reasoner")
+                    Text("deepseek-v4-flash").tag("deepseek-v4-flash")
+                    Text("deepseek-v4-pro").tag("deepseek-v4-pro")
                 }
                 .disabled(appModel.useStubRefinement)
 

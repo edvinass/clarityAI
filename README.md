@@ -37,7 +37,7 @@ ClarityAI uses two macOS APIs, in order:
 2. When prompted, grant **Accessibility** access in **System Settings → Privacy & Security → Accessibility**.
 3. Open **Settings** from the menu bar:
    - Leave **Use built-in stub** on for offline testing (capitalizes sentences).
-   - Or turn stub off and enter a **DeepSeek API token** for real AI refinement (`deepseek-chat` or `deepseek-reasoner`). Get a token at [platform.deepseek.com](https://platform.deepseek.com).
+   - Or turn stub off and enter a **DeepSeek API token** for real AI refinement (`deepseek-v4-flash` or `deepseek-v4-pro`). Get a token at [platform.deepseek.com](https://platform.deepseek.com).
    - Enable **Preview before replacing** to review changes before they are applied.
 
 ### Build and launch

@@ -2,7 +2,7 @@ import SwiftUI
 
 struct ContentView: View {
     private let store = KeyboardSettingsStore.shared
-    private let models = ["deepseek-chat", "deepseek-reasoner"]
+    private let models = ["deepseek-v4-flash", "deepseek-v4-pro"]
 
     @State private var useStub: Bool
     @State private var apiToken: String
